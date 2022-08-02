@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "l3peOw86PkrZ7PqfzKc74uWm7YmrcZUy2zFSxzOVIZLWWo3CdYJjXfbEi33iM11W85DmzX8IEpd/bMafmtwhyw==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Oscar\\Desktop\\myself\\StressTest\\StressTestZminingAPi\\StressTestZminingAPi.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Oscar\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
