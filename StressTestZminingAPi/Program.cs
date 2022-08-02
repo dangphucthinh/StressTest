@@ -56,6 +56,7 @@ namespace WebStressConsoleApp
                     }
                 });
             }
+
             catch (OperationCanceledException)
             {
                 //Console.WriteLine(e.Message);
@@ -72,8 +73,11 @@ namespace WebStressConsoleApp
             {
                 RequestsPerSeconds++;
                 TotalRequestsSent++;
-                TotalSentPerSecond++;
-                
+                client.DefaultRequestHeaders.Accept.Clear();
+                if (!string.IsNullOrEmpty(AccessToken))
+                {
+                    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + AccessToken);
+                }
                 var res = await client.GetAsync(Url);
                 if (res.IsSuccessStatusCode)
                 {
@@ -161,39 +165,6 @@ namespace WebStressConsoleApp
                 Console.WriteLine("\nEnter access token to authenticate: ");
                 string accessToken = Console.ReadLine();
                 attackWithEverything.AccessToken = accessToken;
-
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Accept.Clear();
-                    if (!string.IsNullOrEmpty(accessToken))
-                    {
-                        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
-                    }
-                    try
-                    {
-
-                        var xyz = await client.GetAsync(InputUrl);
-                        if (xyz.IsSuccessStatusCode)
-                        {
-                            var conten = await xyz.Content.ReadAsStringAsync();
-                            conten = conten.Replace(" ", String.Empty);
-                            Console.WriteLine("Response Content: " + conten);
-                            Console.WriteLine("Status Code: " + xyz.StatusCode + "\n");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Server responded negatively!!\nStatus Code: " + xyz.StatusCode);
-                            Console.WriteLine("Terminated Application. Try Again...\n");
-                            return;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine("Can't Connect to the server. Check your Internet Connection!!");
-                        Console.WriteLine("Terminated Application. Try Again...\n");
-                        return;
-                    }
-                }
 
                 StartTime = DateTime.Now;
                 attackWithEverything.Attack();
