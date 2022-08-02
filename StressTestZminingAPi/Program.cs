@@ -13,6 +13,9 @@ namespace WebStressConsoleApp
     public class AttackWithEverything
     {
         public long RequestsPerSeconds { set; get; } = 0;
+        public long RequestsDroppedPerSecond { set; get; } = 0;
+        public long RequestsSuccessPerSecond { set; get; } = 0;
+        public long TotalSentPerSecond { set; get; } = 0;
         public long RequestsDropped { set; get; } = 0;
         public long TotalRequestsSent { set; get; } = 0;
         public long TotalBytesRecieved { set; get; } = 0;
@@ -37,7 +40,7 @@ namespace WebStressConsoleApp
             po.MaxDegreeOfParallelism = System.Environment.ProcessorCount * 2;
 
             HttpClient client = new HttpClient();
-            aTimer = new System.Timers.Timer(1000);
+            aTimer = new System.Timers.Timer(10000);
             aTimer.Elapsed += OnTimedEvent;
             aTimer.AutoReset = true;
             aTimer.Enabled = true;
@@ -69,18 +72,22 @@ namespace WebStressConsoleApp
             {
                 RequestsPerSeconds++;
                 TotalRequestsSent++;
-                RequestSucess++;
+                TotalSentPerSecond++;
+                
                 var res = await client.GetAsync(Url);
                 if (res.IsSuccessStatusCode)
                 {
                     var data = await res.Content.ReadAsStringAsync();
                     TotalBytesRecieved += data.Length;
-                    RequestSucess++;
                 }
                 else
                 {
                     RequestsDropped++;
+                    RequestsDroppedPerSecond++;
+
                 }
+                RequestSucess = TotalRequestsSent - RequestsDropped;
+                RequestsSuccessPerSecond = RequestsPerSeconds - RequestsDroppedPerSecond;
                 return true;
             }
             catch (Exception)
@@ -92,26 +99,22 @@ namespace WebStressConsoleApp
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
+
             if (ShowFurther)
+            {
+                RequestsSuccessPerSecond = RequestsPerSeconds - RequestsDroppedPerSecond;
                 Console.WriteLine("> {0} : Sent {1} requests", DateTime.Now.ToLongTimeString(), RequestsPerSeconds);
+                Console.WriteLine("Total success " + RequestsSuccessPerSecond);
+                Console.WriteLine("Total dropped " + RequestsDroppedPerSecond);
+            }
             RequestsPerSeconds = 0;
+            RequestsSuccessPerSecond = 0;
+            RequestsDroppedPerSecond = 0;
         }
     }
 
     public class Program
     {
-        protected void SetDefaultHeader(HttpClient httpClient, bool isFile = false)
-        {
-            httpClient.BaseAddress = new Uri(Global.CAMPAIGN_API_URL);
-            httpClient.DefaultRequestHeaders.Accept.Clear();
-
-            if (!isFile)
-                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            if (!string.IsNullOrEmpty(Global.AccessToken))
-            {
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + Global.AccessToken);
-            }
-        }
 
         public static async Task Main(string[] args)
         {
@@ -121,6 +124,7 @@ namespace WebStressConsoleApp
             long TotalRequestsSent = 0;
             long RequestsDropped = 0;
             long TotalBytesRecieved = 0;
+            long RequestSuccess = 0;
 
             if (TimeTaken == 0)
             {
@@ -191,7 +195,6 @@ namespace WebStressConsoleApp
                     }
                 }
 
-
                 StartTime = DateTime.Now;
                 attackWithEverything.Attack();
 
@@ -202,6 +205,7 @@ namespace WebStressConsoleApp
                 TotalRequestsSent = attackWithEverything.TotalRequestsSent;
                 RequestsDropped = attackWithEverything.RequestsDropped;
                 TotalBytesRecieved = attackWithEverything.TotalBytesRecieved;
+                RequestSuccess = attackWithEverything.RequestSucess;
                 attackWithEverything.ShowFurther = false;
             }
 
@@ -209,6 +213,7 @@ namespace WebStressConsoleApp
             Console.WriteLine("Total Requests Sent: " + TotalRequestsSent);
             Console.WriteLine("Total Time Taken: " + $"{TimeTaken:0.#}" + " seconds");
             Console.WriteLine("Total Requests Dropped By Server: " + RequestsDropped);
+            Console.WriteLine("Total Requests Success By Server: " + RequestSuccess);
             Console.WriteLine($"Total Data Recieved: {(TotalBytesRecieved / 1048576.0):0.##} MB");
             Console.WriteLine($"Average Speed of Transmission: {((TotalBytesRecieved / 1048576.0) / TimeTaken):0.##} MB/s");
             Console.WriteLine($"Average Requests sent per second: {(TotalRequestsSent / TimeTaken):0.##}\n\n");
